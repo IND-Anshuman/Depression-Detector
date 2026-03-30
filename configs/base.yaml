@@ -1,0 +1,62 @@
+mode: demo
+
+dataset:
+  name: synthetic  # synthetic | feature_manifest | daic_woz | e_daic | generic_video_folder
+  synthetic:
+    num_subjects: 12
+    windows_per_subject: 6
+    seq_len: 32
+
+paths:
+  artifacts_dir: artifacts
+  cache_dir: ${paths.artifacts_dir}/cache
+
+modalities:
+  enabled: [audio, face_au, head_pose, gaze, blink, body_pose, quality]
+  # During training you can randomly drop modalities for robustness.
+  modality_dropout_p: 0.1
+
+features:
+  backend: simple  # one of: simple, mediapipe, openface
+  window_seconds: 4.0
+  fps: 15
+  audio_sr: 16000
+
+model:
+  hidden_size: 192
+  dropout: 0.15
+  num_latents: 32
+  latent_dim: 192
+  num_layers: 2
+  num_heads: 4
+  fusion: perceiver  # perceiver | concat_transformer
+
+loss:
+  weights:
+    binary: 1.0
+    ordinal: 1.0
+    continuous: 1.0
+    bdd: 0.2
+
+training:
+  seed: 1337
+  epochs: 3
+  batch_size: 8
+  lr: 3.0e-4
+  weight_decay: 1.0e-2
+  grad_clip_norm: 1.0
+  amp: false
+  early_stop_patience: 5
+  log_every: 20
+  use_wandb: false
+
+inference:
+  buffer_seconds: 12.0
+  step_seconds: 2.0
+  mc_dropout_passes: 8
+  abstain_uncertainty_threshold: 0.18
+
+ui:
+  title: "MMDS — Multimodal Depression Screening (Research Demo)"
+  privacy_note: "No data is uploaded by default; run locally for sensitive content."
+  disclaimer: "This tool provides screening-oriented risk scores from behavioral indicators; it is not a diagnosis."

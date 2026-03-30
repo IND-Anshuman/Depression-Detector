@@ -1,0 +1,10 @@
+defaults:
+  - base
+
+mode: demo
+
+features:
+  backend: simple
+
+training:
+  epochs: 1

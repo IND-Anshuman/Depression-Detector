@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environments
+.venv/
+venv/
+.env
+
+# IDE
+.vscode/
+
+# Data & artifacts
+artifacts/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.npz
+*.npy
+*.csv
+*.parquet
+
+# OS
+.DS_Store
+Thumbs.db

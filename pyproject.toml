@@ -1,0 +1,92 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mmds"
+version = "0.1.0"
+description = "Research-grade, demo-ready multimodal depression screening from non-verbal video/audio cues."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "MMDS Contributors" }]
+keywords = ["multimodal", "depression", "screening", "video", "audio", "pytorch", "gradio"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "License :: Other/Proprietary License",
+  "Development Status :: 3 - Alpha",
+]
+
+dependencies = [
+  "numpy>=1.26",
+  "pandas>=2.2",
+  "scikit-learn>=1.4",
+  "matplotlib>=3.8",
+  "omegaconf>=2.3",
+  "pyyaml>=6.0",
+  "tqdm>=4.66",
+  "torch>=2.2",
+  "torchaudio>=2.2",
+  "opencv-python-headless>=4.9",
+  "gradio>=4.44",
+  "einops>=0.7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+  "ruff>=0.5",
+  "black>=24.4",
+  "mypy>=1.10",
+]
+research = [
+  "wandb>=0.17",
+]
+mediapipe = [
+  "mediapipe>=0.10",
+]
+
+[project.scripts]
+mmds-train = "mmds.training.cli:main"
+mmds-evaluate = "mmds.evaluation.cli:main"
+mmds-demo = "mmds.ui.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mmds"]
+
+[tool.black]
+line-length = 100
+target-version = ["py311"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I", "B", "UP", "N", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mmds"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+check_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = [
+  "cv2.*",
+  "gradio.*",
+  "matplotlib.*",
+  "sklearn.*",
+  "torchaudio.*",
+]
+ignore_missing_imports = true

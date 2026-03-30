@@ -1,0 +1,13 @@
+defaults:
+  - base
+
+mode: research
+
+features:
+  backend: openface
+
+training:
+  epochs: 20
+  batch_size: 16
+  amp: true
+  use_wandb: false
