@@ -7,6 +7,7 @@ from omegaconf import DictConfig
 
 from mmds.data.adapters.base import AdapterConfig
 from mmds.data.adapters.daic_woz import DaicWozAdapter, DaicWozPaths
+from mmds.data.adapters.dvlog import DVlogAdapter, DVlogConfig
 from mmds.data.adapters.edaic import EDaicAdapter, EDaicPaths
 from mmds.data.adapters.generic_video_folder import GenericVideoFolderAdapter
 from mmds.data.feature_manifest import FeatureManifestConfig, load_feature_manifest
@@ -34,7 +35,7 @@ def build_samples_from_cfg(cfg: DictConfig) -> DatasetBundle:
         )
         return DatasetBundle(samples=samples)
 
-    if name == "feature_manifest":
+    if name in {"feature_manifest", "depvidmood_feature_manifest"}:
         manifest_csv = Path(cfg.dataset.manifest_csv)
         samples = load_feature_manifest(FeatureManifestConfig(manifest_csv=manifest_csv))
         return DatasetBundle(samples=samples)
@@ -52,6 +53,10 @@ def build_samples_from_cfg(cfg: DictConfig) -> DatasetBundle:
     if name == "e_daic":
         paths = EDaicPaths(labels_csv=Path(cfg.dataset.labels_csv), manifest_csv=getattr(cfg.dataset, "manifest_csv", None))
         adapter = EDaicAdapter(AdapterConfig(root=root), paths=paths)
+        return DatasetBundle(samples=adapter.iter_samples())
+
+    if name == "dvlog":
+        adapter = DVlogAdapter(AdapterConfig(root=root), dcfg=DVlogConfig(manifest_csv=Path(cfg.dataset.manifest_csv)))
         return DatasetBundle(samples=adapter.iter_samples())
 
     raise ValueError(f"Unsupported dataset.name={name!r}")

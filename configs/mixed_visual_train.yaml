@@ -1,0 +1,37 @@
+defaults:
+  - base
+
+mode: mixed_visual_train
+
+paths:
+  checkpoint_path: artifacts/mixed_visual_run/checkpoint.pt
+
+modalities:
+  enabled: [audio, face_landmarks, face_au, head_pose, gaze, blink, behavioral_stats, quality]
+  modality_dropout_p: 0.05
+
+model:
+  hidden_size: 128
+  num_layers: 3
+  num_heads: 4
+  lstm_hidden_size: 48
+  attention_dim: 64
+  dropout: 0.1
+  max_timesteps_per_modality: 96
+
+loss:
+  weights:
+    binary: 0.9
+    ordinal: 0.1
+    continuous: 0.0
+    bdd: 0.0
+
+training:
+  epochs: 12
+  batch_size: 12
+  lr: 2.0e-4
+  early_stop_patience: 4
+  use_wandb: false
+
+inference:
+  mc_dropout_passes: 1

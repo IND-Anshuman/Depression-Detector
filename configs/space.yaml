@@ -2,4 +2,19 @@ defaults:
   - demo
 
 ui:
-  title: "MMDS — Depression Screening (HF Space)"
+  title: "MMDS - Depression Screening (HF Space)"
+
+features:
+  fps: 10
+
+model:
+  hidden_size: 128
+  num_layers: 4
+  num_heads: 4
+  lstm_hidden_size: 64
+  attention_dim: 64
+
+inference:
+  buffer_seconds: 6.0
+  step_seconds: 1.0
+  mc_dropout_passes: 2

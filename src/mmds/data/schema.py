@@ -16,6 +16,7 @@ ModalityName = Literal[
     "body_pose",
     "hand_pose",
     "emotion",
+    "behavioral_stats",
     "quality",
 ]
 
@@ -37,6 +38,9 @@ class Sample:
     binary_label: int | None = None
     ordinal_label: int | None = None
     continuous_score: float | None = None
+    bdd_score: float | None = None
+    split: str | None = None
+    severity_label_4class: int | None = None
 
     window_index: int | None = None
     timestamps_s: np.ndarray | None = None
@@ -65,7 +69,9 @@ class ModalityBatch:
     y_binary: torch.Tensor
     y_ordinal: torch.Tensor
     y_continuous: torch.Tensor
+    y_bdd: torch.Tensor
 
     y_mask_binary: torch.Tensor
     y_mask_ordinal: torch.Tensor
     y_mask_continuous: torch.Tensor
+    y_mask_bdd: torch.Tensor

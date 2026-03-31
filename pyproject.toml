@@ -7,7 +7,7 @@ name = "mmds"
 version = "0.1.0"
 description = "Research-grade, demo-ready multimodal depression screening from non-verbal video/audio cues."
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [{ name = "MMDS Contributors" }]
 keywords = ["multimodal", "depression", "screening", "video", "audio", "pytorch", "gradio"]
@@ -19,18 +19,22 @@ classifiers = [
 ]
 
 dependencies = [
-  "numpy>=1.26",
-  "pandas>=2.2",
-  "scikit-learn>=1.4",
-  "matplotlib>=3.8",
-  "omegaconf>=2.3",
-  "pyyaml>=6.0",
-  "tqdm>=4.66",
-  "torch>=2.2",
-  "torchaudio>=2.2",
-  "opencv-python-headless>=4.9",
-  "gradio>=4.44",
-  "einops>=0.7",
+  "numpy==1.26.4",
+  "pandas==2.2.2",
+  "scikit-learn==1.5.1",
+  "matplotlib==3.9.1",
+  "omegaconf==2.3.0",
+  "pyyaml==6.0.2",
+  "tqdm==4.66.5",
+  "torch==2.4.1",
+  "torchaudio==2.4.1",
+  "opencv-python-headless==4.10.0.84",
+  "gradio==5.12.0",
+  "einops==0.8.0",
+  "mediapipe==0.10.14; python_version < '3.12'",
+  "mediapipe==0.10.33; python_version >= '3.12'",
+  "requests==2.32.3",
+  "huggingface_hub==0.25.1",
 ]
 
 [project.optional-dependencies]
@@ -42,10 +46,7 @@ dev = [
   "mypy>=1.10",
 ]
 research = [
-  "wandb>=0.17",
-]
-mediapipe = [
-  "mediapipe>=0.10",
+  "wandb==0.17.7",
 ]
 
 [project.scripts]
@@ -58,11 +59,11 @@ packages = ["src/mmds"]
 
 [tool.black]
 line-length = 100
-target-version = ["py311"]
+target-version = ["py310"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py311"
+target-version = "py310"
 select = ["E", "F", "I", "B", "UP", "N", "SIM"]
 ignore = ["E501"]
 
@@ -74,7 +75,7 @@ addopts = "-q"
 testpaths = ["tests"]
 
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -85,6 +86,7 @@ check_untyped_defs = true
 module = [
   "cv2.*",
   "gradio.*",
+  "mediapipe.*",
   "matplotlib.*",
   "sklearn.*",
   "torchaudio.*",

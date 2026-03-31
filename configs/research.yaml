@@ -3,11 +3,15 @@ defaults:
 
 mode: research
 
+dataset:
+  name: depvidmood_feature_manifest
+  manifest_csv: data/manifests/depvidmood_feature_manifest.csv
+
 features:
-  backend: openface
+  backend: mediapipe_full
+  include_emonet: true
+  include_entropy: true
 
 training:
-  epochs: 20
-  batch_size: 16
-  amp: true
-  use_wandb: false
+  epochs: 50
+  use_wandb: true

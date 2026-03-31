@@ -25,23 +25,30 @@ def subject_stratified_split(
     For partially labeled datasets this uses best-effort stratification on binary_label.
     """
 
+    explicit_splits = {str(s.split).lower() for s in samples if s.split}
+    if explicit_splits:
+        train = [s for s in samples if str(s.split).lower() == "train"]
+        val = [s for s in samples if str(s.split).lower() in {"val", "valid", "validation"}]
+        test = [s for s in samples if str(s.split).lower() == "test"]
+        return Split(train=train, val=val, test=test)
+
     rng = np.random.default_rng(seed)
     subjects = sorted({s.subject_id for s in samples})
 
     # Build subject-level label for stratification if available.
     subj_to_label: dict[str, int] = {}
     for sid in subjects:
-        ys = [s.binary_label for s in samples if s.subject_id == sid and s.binary_label is not None]
+        ys = [s.ordinal_label for s in samples if s.subject_id == sid and s.ordinal_label is not None]
         subj_to_label[sid] = int(round(float(np.mean(ys)))) if ys else 0
 
     # Shuffle within strata.
-    strata: dict[int, list[str]] = {0: [], 1: []}
+    strata: dict[int, list[str]] = {0: [], 1: [], 2: []}
     for sid in subjects:
         strata[subj_to_label.get(sid, 0)].append(sid)
     for k in strata:
         rng.shuffle(strata[k])
 
-    ordered = strata[0] + strata[1]
+    ordered = strata[0] + strata[1] + strata[2]
 
     n = len(ordered)
     n_test = int(round(n * test_frac))

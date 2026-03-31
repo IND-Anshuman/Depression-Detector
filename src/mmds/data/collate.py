@@ -84,6 +84,7 @@ def collate_samples(samples: Iterable[Sample]) -> ModalityBatch:
     yb, mb = _labels_int([s.binary_label for s in samples_l])
     yo, mo = _labels_int([s.ordinal_label for s in samples_l])
     yc, mc = _labels_float([s.continuous_score for s in samples_l])
+    ybdd, mbdd = _labels_float([s.bdd_score for s in samples_l])
 
     return ModalityBatch(
         sample_ids=sample_ids,
@@ -94,7 +95,9 @@ def collate_samples(samples: Iterable[Sample]) -> ModalityBatch:
         y_binary=yb,
         y_ordinal=yo,
         y_continuous=yc,
+        y_bdd=ybdd,
         y_mask_binary=mb,
         y_mask_ordinal=mo,
         y_mask_continuous=mc,
+        y_mask_bdd=mbdd,
     )

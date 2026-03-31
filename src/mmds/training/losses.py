@@ -29,9 +29,10 @@ def coral_targets(y: torch.Tensor, num_classes: int = 3) -> torch.Tensor:
 
 
 class MultitaskLoss(nn.Module):
-    def __init__(self, weights: LossWeights) -> None:
+    def __init__(self, weights: LossWeights, binary_pos_weight: float | None = None) -> None:
         super().__init__()
         self.w = weights
+        self.binary_pos_weight = binary_pos_weight
 
     def forward(
         self,
@@ -49,28 +50,40 @@ class MultitaskLoss(nn.Module):
 
         # Binary
         if m_binary.any():
+            pos_weight = None
+            if self.binary_pos_weight is not None:
+                pos_weight = torch.tensor(float(self.binary_pos_weight), dtype=torch.float32, device=out.binary_logit.device)
             bce = F.binary_cross_entropy_with_logits(
-                out.binary_logit[m_binary], y_binary[m_binary].to(dtype=torch.float32)
+                out.binary_logit[m_binary],
+                y_binary[m_binary].to(dtype=torch.float32),
+                pos_weight=pos_weight,
             )
             losses["binary"] = bce
         else:
             losses["binary"] = out.binary_logit.mean() * 0.0
 
-        # Ordinal (CORAL)
+        # Severity classification: support either legacy CORAL thresholds or direct 3-way logits.
         if m_ordinal.any():
-            t = coral_targets(y_ordinal[m_ordinal], num_classes=3)
             logits = out.ordinal_logits[m_ordinal]
-            losses["ordinal"] = F.binary_cross_entropy_with_logits(logits, t)
+            if logits.shape[-1] == 2:
+                t = coral_targets(y_ordinal[m_ordinal], num_classes=3)
+                losses["ordinal"] = F.binary_cross_entropy_with_logits(logits, t)
+            else:
+                losses["ordinal"] = F.cross_entropy(logits, y_ordinal[m_ordinal].long())
         else:
             losses["ordinal"] = out.ordinal_logits.mean() * 0.0
 
-        # Continuous regression with aleatoric log_var (Gaussian NLL)
+        # Continuous regression with aleatoric log_var (legacy) or MAE-driven hybrid objective.
         if m_cont.any():
             mu = out.continuous_mean[m_cont]
-            lv = out.continuous_log_var[m_cont]
-            var = torch.exp(lv)
-            nll = 0.5 * (torch.log(var + 1e-6) + (y_cont[m_cont] - mu) ** 2 / (var + 1e-6))
-            losses["continuous"] = nll.mean()
+            if out.continuous_log_var is not None:
+                lv = out.continuous_log_var[m_cont]
+                var = torch.exp(lv)
+                mae = torch.abs(y_cont[m_cont] - mu)
+                nll = 0.5 * (torch.log(var + 1e-6) + (y_cont[m_cont] - mu) ** 2 / (var + 1e-6))
+                losses["continuous"] = 0.5 * nll.mean() + 0.5 * mae.mean()
+            else:
+                losses["continuous"] = F.l1_loss(mu, y_cont[m_cont])
         else:
             losses["continuous"] = out.continuous_mean.mean() * 0.0
 

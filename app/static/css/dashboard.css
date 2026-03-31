@@ -1,0 +1,59 @@
+:root {
+  --bg0: #0f172a;
+  --bg1: #132238;
+  --glass: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --accent: #f26464;
+  --accent-2: #4ecdc4;
+  --text: rgba(255, 255, 255, 0.93);
+}
+
+body, .gradio-container {
+  background:
+    radial-gradient(1200px circle at 0% 0%, rgba(242, 100, 100, 0.18), transparent 40%),
+    radial-gradient(900px circle at 100% 10%, rgba(78, 205, 196, 0.18), transparent 35%),
+    linear-gradient(180deg, var(--bg0), var(--bg1));
+  color: var(--text);
+  font-family: "Segoe UI", "Trebuchet MS", sans-serif;
+}
+
+.mmds-shell {
+  padding: 18px 0 10px;
+}
+
+.mmds-hero {
+  max-width: 1100px;
+  margin: 0 auto 12px;
+  padding: 18px 22px;
+}
+
+.mmds-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.mmds-hero h1 {
+  margin: 8px 0;
+  font-size: 32px;
+  line-height: 1.05;
+}
+
+.mmds-banner {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(220, 38, 38, 0.16);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fee2e2;
+}
+
+.mmds-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  backdrop-filter: blur(14px);
+  padding: 12px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.18);
+}

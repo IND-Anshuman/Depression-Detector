@@ -88,4 +88,10 @@ def load_config(*yaml_paths: str | Path, overrides: Mapping[str, Any] | None = N
     if overrides:
         merged = OmegaConf.merge(merged, dict(overrides))
     merged = OmegaConf.create(OmegaConf.to_container(merged, resolve=True))
+    if "feature_backend" in merged:
+        merged.features.backend = merged.feature_backend
+    if "include_emonet" in merged:
+        merged.features.include_emonet = bool(merged.include_emonet)
+    if "include_entropy" in merged:
+        merged.features.include_entropy = bool(merged.include_entropy)
     return LoadedConfig(cfg=merged, sources=sources)

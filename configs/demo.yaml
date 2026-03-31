@@ -4,7 +4,12 @@ defaults:
 mode: demo
 
 features:
-  backend: simple
+  backend: mediapipe_full
+  include_emonet: true
+  include_entropy: true
 
 training:
   epochs: 1
+
+inference:
+  mc_dropout_passes: 4
