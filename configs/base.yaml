@@ -1,7 +1,8 @@
 mode: demo
 
 dataset:
-  name: synthetic  # synthetic | feature_manifest | daic_woz | e_daic | generic_video_folder
+  name: synthetic  # synthetic | feature_manifest | depvidmood_feature_manifest | daic_woz | e_daic | generic_video_folder | dvlog
+  manifest_csv: data/manifests/depvidmood_feature_manifest.csv
   synthetic:
     num_subjects: 12
     windows_per_subject: 6
@@ -10,36 +11,54 @@ dataset:
 paths:
   artifacts_dir: artifacts
   cache_dir: ${paths.artifacts_dir}/cache
+  checkpoint_path: ${paths.artifacts_dir}/checkpoint.pt
 
 modalities:
-  enabled: [audio, face_au, head_pose, gaze, blink, body_pose, quality]
+  enabled: [audio, face_landmarks, face_au, emotion, head_pose, gaze, blink, body_pose, hand_pose, behavioral_stats, quality]
   # During training you can randomly drop modalities for robustness.
   modality_dropout_p: 0.1
 
 features:
-  backend: simple  # one of: simple, mediapipe, openface
+  backend: simple  # one of: simple, mediapipe, mediapipe_full, openface
+  include_emonet: false
+  include_entropy: false
+  include_openface: false
   window_seconds: 4.0
   fps: 15
   audio_sr: 16000
+  emonet:
+    enabled: ${features.include_emonet}
+    variant: 8
+    strict_weights: false
+    weights_path: ${paths.artifacts_dir}/models/emonet/emonet_8.pth
+    embedding_dim: 10
+  holistic:
+    model_complexity: 1
+    min_detection_confidence: 0.5
+    min_tracking_confidence: 0.5
+    smooth_landmarks: true
+    max_faces: 1
 
 model:
   hidden_size: 192
   dropout: 0.15
   num_latents: 32
   latent_dim: 192
-  num_layers: 2
+  num_layers: 8
   num_heads: 4
-  fusion: perceiver  # perceiver | concat_transformer
+  fusion: hybrid  # perceiver | concat_transformer | hybrid
+  lstm_hidden_size: 128
+  attention_dim: 128
 
 loss:
   weights:
-    binary: 1.0
-    ordinal: 1.0
-    continuous: 1.0
-    bdd: 0.2
+    binary: 0.0
+    ordinal: 0.6
+    continuous: 0.1
+    bdd: 0.3
 
 training:
-  seed: 1337
+  seed: 42
   epochs: 3
   batch_size: 8
   lr: 3.0e-4
@@ -49,12 +68,15 @@ training:
   early_stop_patience: 5
   log_every: 20
   use_wandb: false
+  balanced_sampling: true
+  use_class_pos_weight: true
 
 inference:
   buffer_seconds: 12.0
   step_seconds: 2.0
   mc_dropout_passes: 8
   abstain_uncertainty_threshold: 0.18
+  max_frame_latency_ms: 15.0
 
 ui:
   title: "MMDS — Multimodal Depression Screening (Research Demo)"

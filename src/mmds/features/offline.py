@@ -130,7 +130,11 @@ def extract_features_from_manifest(cfg: DictConfig, in_manifest_csv: Path, paths
                     "features_path": str(out_npz),
                     "binary_label": r.get("binary_label"),
                     "ordinal_label": r.get("ordinal_label"),
+                    "ordinal_label_3class": r.get("ordinal_label_3class", r.get("ordinal_label")),
                     "continuous_score": r.get("continuous_score"),
+                    "bdd_score": res.debug.get("bdd_score", r.get("bdd_score")),
+                    "split": r.get("split"),
+                    "severity_label_4class": r.get("severity_label_4class"),
                 }
             )
 

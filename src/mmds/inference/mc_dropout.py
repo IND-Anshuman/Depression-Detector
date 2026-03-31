@@ -61,9 +61,14 @@ def mc_forward(
     x_mask: dict[str, torch.Tensor],
     passes: int,
 ) -> list[ModelOutputs]:
+    if passes <= 1:
+        model.eval()
+        with torch.inference_mode():
+            return [model(x, x_mask)]
+
     model.train()  # enable dropout
     outs: list[ModelOutputs] = []
-    with torch.no_grad():
+    with torch.inference_mode():
         for _ in range(passes):
             outs.append(model(x, x_mask))
     model.eval()

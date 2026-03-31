@@ -1,0 +1,14 @@
+defaults:
+  - base
+
+mode: compact_av_extract
+
+features:
+  backend: mediapipe_dvlog
+  include_emonet: false
+  include_entropy: false
+  fps: 5
+  dvlog_target_hz: 1.0
+
+inference:
+  mc_dropout_passes: 1

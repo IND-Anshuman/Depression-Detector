@@ -65,6 +65,8 @@ def evaluate(cfg: DictConfig, ckpt_path: Path, samples: list[Sample], out_dir: P
                         "m_ordinal": bool(batch.y_mask_ordinal[i].detach().cpu().item()),
                         "y_cont": float(batch.y_continuous[i].detach().cpu().item()),
                         "m_cont": bool(batch.y_mask_continuous[i].detach().cpu().item()),
+                        "y_bdd": float(batch.y_bdd[i].detach().cpu().item()),
+                        "m_bdd": bool(batch.y_mask_bdd[i].detach().cpu().item()),
                         "p_risk": float(bprob[i]),
                         "sev0": float(sev[i, 0]),
                         "sev1": float(sev[i, 1]),

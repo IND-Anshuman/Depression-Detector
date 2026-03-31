@@ -1,0 +1,25 @@
+defaults:
+  - base
+
+mode: live_mixed_visual
+
+paths:
+  checkpoint_path: artifacts/mixed_visual_run_v3/checkpoint.pt
+
+features:
+  backend: mediapipe_dvlog
+  include_emonet: false
+  include_entropy: false
+  fps: 4
+  dvlog_target_hz: 1.5
+
+inference:
+  buffer_seconds: 2.5
+  step_seconds: 0.35
+  mc_dropout_passes: 1
+  max_frame_latency_ms: 25.0
+
+ui:
+  title: "MMDS - Live Webcam Screening (Mixed AV Model)"
+  privacy_note: "This live mode uses compact webcam face cues and microphone MFCCs aligned to the mixed training schema."
+  disclaimer: "This research demo is screening-oriented and should not be used as a diagnosis."

@@ -15,6 +15,11 @@ class FeatureManifestConfig:
 
 
 def load_feature_manifest(cfg: FeatureManifestConfig) -> list[Sample]:
+    if not cfg.manifest_csv.exists():
+        raise FileNotFoundError(
+            f"Feature manifest not found: {cfg.manifest_csv}\n"
+            "Run `scripts/extract_features.py` first, then pass the generated features manifest to training/evaluation."
+        )
     df = pd.read_csv(cfg.manifest_csv)
     out: list[Sample] = []
 
@@ -45,18 +50,41 @@ def load_feature_manifest(cfg: FeatureManifestConfig) -> list[Sample]:
                 return None
             return float(r[name])
 
+        metadata = {
+            k: (None if pd.isna(v) else v)
+            for k, v in r.to_dict().items()
+            if k
+            not in {
+                "sample_id",
+                "subject_id",
+                "dataset_name",
+                "binary_label",
+                "ordinal_label",
+                "ordinal_label_3class",
+                "continuous_score",
+                "bdd_score",
+                "window_index",
+                "features_path",
+                "split",
+                "severity_label_4class",
+            }
+        }
+
         out.append(
             Sample(
                 sample_id=str(r["sample_id"]),
                 subject_id=str(r["subject_id"]),
                 dataset_name=str(r.get("dataset_name", "features")),
                 binary_label=_opt_int("binary_label"),
-                ordinal_label=_opt_int("ordinal_label"),
+                ordinal_label=_opt_int("ordinal_label_3class") if "ordinal_label_3class" in r else _opt_int("ordinal_label"),
                 continuous_score=_opt_float("continuous_score"),
+                bdd_score=_opt_float("bdd_score"),
+                split=str(r["split"]) if "split" in r and not pd.isna(r["split"]) else None,
+                severity_label_4class=_opt_int("severity_label_4class"),
                 window_index=int(r["window_index"]) if "window_index" in r and not pd.isna(r["window_index"]) else None,
                 modality_payloads=payloads,
                 modality_masks=masks,
-                metadata={"features_path": str(fpath)},
+                metadata={"features_path": str(fpath), **metadata},
             )
         )
 

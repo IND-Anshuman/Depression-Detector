@@ -1,58 +1,45 @@
-# MMDS — Multimodal Depression Screening (Research + Demo)
+# MMDS: Multimodal Depression Screening
 
-**MMDS** is a research-grade, demo-ready multimodal *screening* pipeline that produces **depression risk scores** from **non-verbal video/audio behavioral indicators** (e.g., proxy facial activity, motion variability, signal quality, and uncertainty).
+MMDS is a research-oriented multimodal depression screening project built around live video feature extraction, offline manifest-driven training, hybrid multimodal fusion, and a polished Gradio dashboard.
 
-## Disclaimer (read first)
+## Disclaimer
 
-- This is a **screening/research** tool. It is **not** a diagnostic medical system and must not be used to diagnose, treat, or prevent any disease.
-- Outputs are **risk scores with uncertainty** derived from behavioral indicators and signal quality.
-- Model predictions can be wrong, biased, or poorly calibrated outside the data distribution.
+This project is a screening and research system, not a diagnostic medical device. Predictions can be wrong, biased, or unstable outside the data and hardware conditions used during experimentation.
 
-## What it does
+## What Changed
 
-Multi-task outputs (per buffered window):
-- **Binary depression risk** probability
-- **3-class severity** probability (low / moderate / high)
-- **Continuous severity score** in $[0,1]$
-- **Uncertainty / confidence** + **abstain recommendation** (MC-dropout)
-- **BDD-style behavioral variability** score (auxiliary; kept separate from depression outputs)
-
-Interpretable visualizations (demo path ships lightweight proxies):
-- Proxy **AU activity trend**
-- **Temporal importance** proxy (cross-attention aggregation or token norms)
-- **Signal quality** indicators + warnings
-- Rolling risk score
+- `mediapipe_full` backend for full-window face, pose, hand, gaze, blink, emotion-style, and behavioral variability features
+- Hybrid fusion backbone with a TSFFM-like face/body module, Transformer encoder, Bi-LSTM, and self-attention pooling
+- Manifest-first training path for DepVidMood and prepared D-Vlog / DAIC-style datasets
+- Premium live dashboard with holistic overlays, risk gauge, class bars, modality contributions, and attention heatmap
+- Reproducibility tooling with pinned versions, environment hashing, and explicit model downloads
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  A[Webcam frames + optional mic] --> B[Buffered windowing]
-  B --> C[Feature extractor backend]
-  C -->|modality time-series + masks| D[Modality encoders]
-  D --> E[TSFFM-inspired FaceBodyFusionBlock (module)]
-  E --> F[Global fusion backbone (Perceiver-style / Transformer)]
-  F --> G[Multi-task heads]
-  G --> H[Risk + severity + continuous + (optional) BDD]
-  F --> I[Token importance + summaries]
-  C --> J[Signal quality + warnings]
-  H --> K[MC-dropout uncertainty + abstain]
-  H --> L[Gradio dashboard]
-  I --> L
-  J --> L
-  K --> L
+  A["Webcam / video input"] --> B["MediaPipe Holistic + audio frontend"]
+  B --> C["Face landmarks + pose + hands + gaze/blink"]
+  B --> D["Emotion-style embedding + entropy / BDD stats"]
+  C --> E["TSFFM-like face/body FE module"]
+  D --> F["Shared modality encoders"]
+  E --> G["Transformer encoder"]
+  F --> G
+  G --> H["Bi-LSTM + self-attention pooling"]
+  H --> I["3-class severity head"]
+  H --> J["Continuous score head"]
+  H --> K["BDD auxiliary head"]
+  I --> L["Binary risk = moderate + high"]
+  H --> M["Attention + modality attribution"]
+  L --> N["Gradio dashboard"]
+  J --> N
+  K --> N
+  M --> N
 ```
-
-### Feature backends (pluggable)
-- **`simple` (default demo)**: pure Python/OpenCV *proxy* indicators for AU-like activity, motion, brightness/blur.
-- **`mediapipe` (optional)**: currently falls back to `simple` with a clear swap-point for FaceMesh/Pose.
-- **`openface` (research)**: stub that intentionally fails unless you provide an OpenFace-enabled environment; use offline extraction.
 
 ## Quickstart
 
-### 1) Install
-
-Python 3.11 is required.
+### 1. Install
 
 ```bash
 python -m venv .venv
@@ -62,89 +49,152 @@ python -m pip install -U pip
 python -m pip install -e .[dev]
 ```
 
-### 2) Run the demo (buffered webcam)
+CUDA-specific Torch builds such as `torch==2.4.1+cu121` should be installed separately when you want GPU acceleration, then the rest of the project can be installed with `python -m pip install -e .[dev]`.
+
+If you are on Python 3.12+ and cannot resolve `mediapipe==0.10.14`, the project falls back to the pinned compatibility build from `pyproject.toml`.
+
+### 2. Verify the environment
 
 ```bash
-python scripts/run_demo.py --config configs/demo.yaml
+python scripts/verify_environment.py
+python scripts/check_real_data_ready.py --raw-dir data/raw --manifest data/manifests/depvidmood_feature_manifest.csv --feature-manifest artifacts/features/depvidmood_features_manifest.csv
 ```
 
-The dashboard provides **risk scores** with **uncertainty** and a **privacy note**. It runs on CPU by default.
-
-### 3) Train (out-of-the-box synthetic data)
-
-This repo ships a synthetic dataset path so the entire pipeline runs without private data.
+### 3. Download EmoNet weights
 
 ```bash
-python scripts/train.py --config configs/demo.yaml
-# checkpoint saved to artifacts/checkpoint.pt
+python scripts/download_emonet_weights.py --variant 8
 ```
 
-### 4) Evaluate
+### 4. Prepare DepVidMood
 
 ```bash
-python scripts/evaluate.py --config configs/demo.yaml --ckpt artifacts/checkpoint.pt --out artifacts/eval
+bash scripts/setup_kaggle.sh
+python scripts/build_depvidmood_manifest.py --raw-dir data/raw/depvidmood-facial-expression-video-dataset --output data/manifests/depvidmood_feature_manifest.csv
+python scripts/extract_features.py --config configs/demo.yaml --in-manifest data/manifests/depvidmood_feature_manifest.csv --out-dir artifacts/features --out-manifest artifacts/features_manifest.csv
 ```
 
-Artifacts:
-- `artifacts/eval/predictions.csv`
-- `artifacts/eval/metrics.json`
-- `artifacts/eval/roc.png`, `artifacts/eval/calibration.png`
-
-## Offline feature extraction (research-friendly)
-
-Training should not depend on video decoding at runtime. The intended workflow is:
-
-1) Prepare an input manifest CSV, e.g. `my_manifest.csv` with columns:
-   - `sample_id`, `subject_id`, `dataset_name`, `video_path`
-   - optional: `audio_path`, `binary_label`, `ordinal_label`, `continuous_score`
-2) Extract windowed features into `.npz` + write a features manifest:
+If the dataset ships a metadata CSV or JSON with explicit labels and relative video paths, prefer:
 
 ```bash
-python scripts/extract_features.py \
-  --config configs/demo.yaml \
-  --in-manifest my_manifest.csv \
-  --out-dir artifacts/features \
-  --out-manifest artifacts/features_manifest.csv
+python scripts/build_depvidmood_manifest.py --raw-dir data/raw/depvidmood-facial-expression-video-dataset --metadata-csv data/raw/depvidmood-facial-expression-video-dataset/labels.csv --video-column video_path --severity-column severity --subject-column subject_id --sample-column sample_id --output data/manifests/depvidmood_feature_manifest.csv
 ```
 
-3) Train using the features manifest:
-- set `dataset.name: feature_manifest`
-- set `dataset.manifest_csv: artifacts/features_manifest.csv`
+### 5. Train
 
-## Hugging Face Spaces (Docker Space)
-
-- Entry point: `app/gradio_app.py`
-- Default config: `configs/space.yaml`
-
-Build/run locally:
 ```bash
-docker build -t mmds .
-docker run -p 7860:7860 mmds
+python scripts/train.py --config configs/research.yaml --use_real_data --real_dataset depvidmood --manifest_csv artifacts/features_manifest.csv --epochs 50 --wandb_project MMDS-Final
 ```
 
-## Output interpretation
+### 6. Evaluate
 
-- **Risk probability**: screening-oriented estimate, not a diagnosis.
-- **Severity (3-class)**: ordinal severity bucket; interpretation depends on dataset mapping.
-- **Continuous score**: normalized severity indicator in $[0,1]$.
-- **Uncertainty/confidence**: derived from MC-dropout variability (epistemic) and regression variance.
-- **Abstain recommendation**: triggers when uncertainty exceeds `inference.abstain_uncertainty_threshold`.
+```bash
+python scripts/evaluate.py --config configs/research.yaml --ckpt artifacts/checkpoint.pt --out artifacts/eval --use_real_data --real_dataset depvidmood --manifest_csv artifacts/features_manifest.csv
+```
 
-### BDD-style behavioral variability (auxiliary)
-- Computed post-hoc from the entropy of AU-like activity and body-motion signals.
-- Intended as an **auxiliary behavioral descriptor**, not a depression label.
-- Kept **separate** from the depression heads in code and UI.
+### 7. Run the full real-data pipeline
 
-## Roadmap / extensions
+```bash
+python scripts/run_depvidmood_pipeline.py --raw-dir data/raw/depvidmood-facial-expression-video-dataset --config configs/research.yaml --epochs 50 --artifacts-dir artifacts/depvidmood_run
+```
 
-- Real MediaPipe landmarks → head pose / blink / gaze features
-- Subject-level temporal aggregation (per-video) and calibration metrics
-- Proper ablation + missing-modality robustness reports
-- Optional W&B logging behind `training.use_wandb`
-- OpenFace extraction container + AU trend UI that uses true AU semantics
+### 8. Import a DVlog feature zip
 
-## Limitations
+```bash
+python scripts/build_dvlog_feature_manifest.py --zip-path D:\dvlog-dataset.zip --links-csv D:\dvlog-video-links-2026.csv --out-dir artifacts/features/dvlog --out-manifest artifacts/features/dvlog_features_manifest.csv
+python scripts/train.py --config configs/research.yaml --out artifacts/dvlog_run --use_real_data --real_dataset feature_manifest --manifest_csv artifacts/features/dvlog_features_manifest.csv --epochs 20 --wandb_project MMDS-DVlog
+python scripts/evaluate.py --config configs/research.yaml --ckpt artifacts/dvlog_run/checkpoint.pt --out artifacts/dvlog_run/eval --use_real_data --real_dataset feature_manifest --manifest_csv artifacts/features/dvlog_features_manifest.csv
+```
 
-- The default demo backend uses **proxy** features (not clinically validated AUs/pose).
-- Uncertainty is **heuristic** and may be miscalibrated.
-- Dataset adapters are scaffolds; you should provide prepared manifests for reproducibility.
+For the lighter binary-focused checkpoint used by the live webcam path, prefer:
+
+```bash
+python scripts/train.py --config configs/dvlog_train.yaml --out artifacts/dvlog_live_run --use_real_data --real_dataset feature_manifest --manifest_csv artifacts/features/dvlog_features_manifest.csv --epochs 12
+python scripts/evaluate.py --config configs/dvlog_train.yaml --ckpt artifacts/dvlog_live_run/checkpoint.pt --out artifacts/dvlog_live_run/eval --use_real_data --real_dataset feature_manifest --manifest_csv artifacts/features/dvlog_features_manifest.csv
+```
+
+### 9. Run the live demo
+
+```bash
+python scripts/run_demo.py --config configs/space.yaml
+```
+
+For a live webcam path aligned to the DVlog-trained checkpoint, use:
+
+```bash
+python scripts/run_demo.py --config configs/live_dvlog.yaml
+```
+
+## Live Dashboard
+
+The dashboard uses `gr.Image(..., streaming=True)` webcam streaming with latency-aware frame skipping, live holistic overlays, a risk gauge, 3-class bars, modality contribution bars, attention heatmap, rolling risk, AU trend, FPS reporting, and a strong disclaimer banner.
+
+## Hugging Face Spaces
+
+The Docker entrypoint is [app/gradio_app.py](/Users/HP/.codex/worktrees/1ae3/Depression-Detector/app/gradio_app.py). After authenticating with the Hugging Face CLI, upload with:
+
+```bash
+huggingface-cli upload IND-Anshuman/Multimodal-Depression-Detector --repo-type=space --space-sdk=gradio
+```
+
+## Datasets
+
+Prepared manifests are the canonical interface. The project supports:
+
+- DepVidMood through [`scripts/build_depvidmood_manifest.py`](/Users/HP/.codex/worktrees/1ae3/Depression-Detector/scripts/build_depvidmood_manifest.py)
+- D-Vlog through prepared manifests consumed by the `dvlog` adapter
+- DAIC-WOZ and E-DAIC through prepared label + manifest CSVs
+
+### D-Vlog request template
+
+```text
+Subject: Request for D-Vlog depression dataset access
+
+Hello,
+
+I am working on a research project focused on multimodal depression screening from non-verbal video cues. I would like to request access to the D-Vlog dataset and any accompanying usage instructions or metadata required for academic/research evaluation.
+
+Thank you.
+```
+
+### DAIC request template
+
+```text
+Subject: Request for DAIC-WOZ / E-DAIC access
+
+Hello,
+
+I am conducting research on multimodal depression screening and would like to request access to the DAIC-WOZ / E-DAIC resources for non-commercial academic experimentation. Please let me know the application steps and any data use requirements.
+
+Thank you.
+```
+
+## Benchmarks and Verification
+
+Run the end-of-implementation checks:
+
+```bash
+python -m pytest tests/ -q --tb=no
+python benchmarks/fps_benchmark.py --config configs/space.yaml
+python benchmarks/unseen_video_test.py --videos test_videos/ --threshold 0.85
+```
+
+## Reproducibility
+
+- Key dependencies are pinned in [pyproject.toml](/Users/HP/.codex/worktrees/1ae3/Depression-Detector/pyproject.toml) and [requirements.lock](/Users/HP/.codex/worktrees/1ae3/Depression-Detector/requirements.lock)
+- Training and extraction default to seed `42`
+- [`scripts/verify_environment.py`](/Users/HP/.codex/worktrees/1ae3/Depression-Detector/scripts/verify_environment.py) prints package versions, platform info, git commit, and a reproducibility hash
+
+## Repository Layout
+
+- [src/mmds/features](/Users/HP/.codex/worktrees/1ae3/Depression-Detector/src/mmds/features)
+- [src/mmds/models](/Users/HP/.codex/worktrees/1ae3/Depression-Detector/src/mmds/models)
+- [src/mmds/ui](/Users/HP/.codex/worktrees/1ae3/Depression-Detector/src/mmds/ui)
+- [benchmarks](/Users/HP/.codex/worktrees/1ae3/Depression-Detector/benchmarks)
+- [presentation](/Users/HP/.codex/worktrees/1ae3/Depression-Detector/presentation)
+
+## Citations
+
+- Toisoul et al., *Estimation of continuous valence and arousal levels from faces in naturalistic conditions*, Nature Machine Intelligence, 2021
+- Gimeno-Gómez et al., *Reading Between the Frames: Multi-modal Depression Detection in Videos from Non-verbal Cues*, ECIR 2024
+- Additional depression-screening references from your original project plan should be listed alongside any dataset-specific citations before publication or external release

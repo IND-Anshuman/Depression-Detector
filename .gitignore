@@ -7,10 +7,11 @@ __pycache__/
 .ruff_cache/
 
 # Environments
-.venv/
+.venv310
 venv/
 .env
-
+*.png
+*.mp4
 # IDE
 .vscode/
 

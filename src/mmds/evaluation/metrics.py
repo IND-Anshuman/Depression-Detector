@@ -19,6 +19,7 @@ from sklearn.metrics import (
 class EvalMetrics:
     auroc: float | None
     f1: float | None
+    macro_f1: float | None
     precision: float | None
     recall: float | None
     accuracy: float | None
@@ -27,6 +28,7 @@ class EvalMetrics:
     rmse: float | None
 
     severity_accuracy: float | None
+    severity_macro_f1: float | None
 
 
 def compute_metrics(
@@ -41,7 +43,7 @@ def compute_metrics(
     m_cont: np.ndarray,
 ) -> EvalMetrics:
     auroc = None
-    f1 = precision = recall = accuracy = None
+    f1 = macro_f1 = precision = recall = accuracy = None
     if m_bin.any():
         yt = y_true_bin[m_bin]
         yp = y_prob_bin[m_bin]
@@ -51,6 +53,7 @@ def compute_metrics(
         except Exception:
             auroc = None
         f1 = float(f1_score(yt, yhat))
+        macro_f1 = float(f1_score(yt, yhat, average="macro"))
         precision = float(precision_score(yt, yhat, zero_division=0))
         recall = float(recall_score(yt, yhat, zero_division=0))
         accuracy = float(accuracy_score(yt, yhat))
@@ -62,19 +65,22 @@ def compute_metrics(
         mae = float(mean_absolute_error(yt, yp))
         rmse = float(mean_squared_error(yt, yp, squared=False))
 
-    sev_acc = None
+    sev_acc = sev_macro_f1 = None
     if m_ord.any():
         sev_acc = float(accuracy_score(y_true_ord[m_ord], y_pred_ord[m_ord]))
+        sev_macro_f1 = float(f1_score(y_true_ord[m_ord], y_pred_ord[m_ord], average="macro"))
 
     return EvalMetrics(
         auroc=auroc,
         f1=f1,
+        macro_f1=macro_f1,
         precision=precision,
         recall=recall,
         accuracy=accuracy,
         mae=mae,
         rmse=rmse,
         severity_accuracy=sev_acc,
+        severity_macro_f1=sev_macro_f1,
     )
 
 

@@ -1,0 +1,32 @@
+defaults:
+  - base
+
+mode: dvlog_train
+
+paths:
+  checkpoint_path: artifacts/dvlog_live_run/checkpoint.pt
+
+model:
+  hidden_size: 128
+  num_layers: 4
+  num_heads: 4
+  lstm_hidden_size: 64
+  attention_dim: 64
+  dropout: 0.1
+
+loss:
+  weights:
+    binary: 0.85
+    ordinal: 0.0
+    continuous: 0.15
+    bdd: 0.0
+
+training:
+  epochs: 12
+  batch_size: 8
+  lr: 2.0e-4
+  early_stop_patience: 4
+  use_wandb: false
+
+inference:
+  mc_dropout_passes: 1

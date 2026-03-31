@@ -1,0 +1,25 @@
+defaults:
+  - base
+
+mode: live_dvlog
+
+paths:
+  checkpoint_path: artifacts/dvlog_live_run/checkpoint.pt
+
+features:
+  backend: mediapipe_dvlog
+  include_emonet: false
+  include_entropy: false
+  fps: 5
+  dvlog_target_hz: 1.0
+
+inference:
+  buffer_seconds: 4.0
+  step_seconds: 0.5
+  mc_dropout_passes: 1
+  max_frame_latency_ms: 20.0
+
+ui:
+  title: "MMDS - Live Webcam Screening (DVlog-Compatible)"
+  privacy_note: "This live mode uses webcam/audio features aligned to the DVlog-trained checkpoint."
+  disclaimer: "This research demo is only structurally aligned to the trained checkpoint; it is not a clinical diagnosis."
